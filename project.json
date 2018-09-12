@@ -1,0 +1,7 @@
+{
+    "id":"ecs_helloworld",
+    "type":"executable",
+    "value": {
+    	"use": ["reflecs"]
+    }
+}
