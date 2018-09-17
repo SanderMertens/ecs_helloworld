@@ -47,8 +47,8 @@ int main(int argc, char *argv[]) {
 
     /* Progress world once a second */
     while (true) {
-    		ecs_progress(world);
-    		sleep(1);
+        ecs_progress(world);
+        sleep(1);
     }
 
     return 0;
