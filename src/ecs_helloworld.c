@@ -1,66 +1,55 @@
 #include <include/ecs_helloworld.h>
 #include <reflecs/reflecs.h>
+#include <unistd.h>
+#include <stdio.h>
 
-typedef struct Location {
-	int x;
-	int y;
-} Location;
+/* -- Components -- */
 
-typedef struct Speed {
-	int x;
-	int y;
-} Speed;
+typedef struct Position {
+		int x;
+		int y;
+} Position;
 
-typedef struct Color {
-	char *color;
-} Color;
+typedef int Speed;
 
-void Move(EcsEntity *system, EcsEntity *e, void *data[]) {
-	Location *location = data[0];
-	Speed *speed = data[1];
 
-	location->x += speed->x;
-	location->y += speed->y;
+/* -- Systems --*/
 
-	printf("%s: moved %d, %d\n", ecs_get_id(e), location->x, location->y);
+void Init(void *data[], EcsInfo *info) {
+		Position *position = data[0];
+		Speed *speed = data[1];
+		position->x = 0;
+		position->y = 0;
+		*speed = 1;
 }
 
-void InitSpeed(EcsEntity *system, EcsEntity *e, void *data[]) {
-	Speed *speed = data[0];
-
-	speed->x = 1;
-	speed->y = 1;
-
-	printf("%s: init %d, %d\n", ecs_get_id(e), speed->x, speed->y);
+void Move(void *data[], EcsInfo *info) {
+		Position *position = data[0];
+		Speed speed = *(Speed*)data[1];
+		position->x += speed;
+		position->y += speed * 2;
 }
 
 int main(int argc, char *argv[]) {
+		EcsWorld *world = ecs_init();
 
-	EcsWorld *world = ecs_world_new();
+		/* Register components and systems with world */
+		ECS_COMPONENT(world, Position);
+		ECS_COMPONENT(world, Speed);
+		ECS_SYSTEM(world, Init, EcsOnInit, Position, Speed);
+		ECS_SYSTEM(world, Move, EcsPeriodic, Position, Speed);
 
-	ECS_COMPONENT(world, Location);
-	ECS_COMPONENT(world, Speed);
-	ECS_COMPONENT(world, Color);
+		/* Create single entity with Position and Speed component */
+		EcsHandle e = ecs_new(world);
+		ecs_stage(world, e, Position_h);
+		ecs_stage(world, e, Speed_h);
+		ecs_commit(world, e);
 
-	ECS_SYSTEM(world, InitSpeed, EcsOnInit, Speed);
-	ECS_SYSTEM(world, Move, EcsPeriodic, Location, Speed);
+		/* Progress world once a second */
+		while (true) {
+				ecs_progress(world);
+				sleep(1);
+		}
 
-	EcsEntity *e = ecs_new(world, "my_entity");
-	Color *color = ecs_add(e, Color_e);
-	color->color = "RED";
-	ecs_add(e, Location_e);
-	ecs_add(e, Speed_e);
-
-	e = ecs_new(world, "my_2nd_entity");
-	color = ecs_add(e, Color_e);
-	color->color = "RED";
-	ecs_add(e, Location_e);
-	ecs_add(e, Speed_e);
-
-	while (true) {
-		ecs_world_progress(world);
-		sleep(1);
-	}
-
-    return 0;
+	  return 0;
 }
